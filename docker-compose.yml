@@ -1,0 +1,33 @@
+# 双屏揭示台 —— 只提供一个常驻 Web 组件，外加一个一次性验收服务 verify。
+# 宿主端口可用 WEB_PORT 覆盖： WEB_PORT=9000 docker compose up --build web
+services:
+  web:
+    build:
+      context: .
+      target: web
+    image: reveal-bench-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
+
+  # 一次性：类型检查 + Vitest 状态机测试 + Playwright 双浏览上下文验收，结束即退出。
+  # 运行： docker compose run --rm verify
+  verify:
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      E2E_BASE_URL: http://web:80
+      CI: "1"
+    depends_on:
+      web:
+        condition: service_healthy
+    command:
+      - bash
+      - -lc
+      - |
+        npm ci &&
+        npx tsc --noEmit &&
+        npx vitest run &&
+        npx playwright test

@@ -1,0 +1,268 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2129;
+  --panel-2: #222b35;
+  --border: #303c49;
+  --text: #e6edf3;
+  --muted: #8b98a5;
+  --ok: #2ea043;
+  --ok-bg: #10331c;
+  --warn: #d29922;
+  --warn-bg: #3a2e0d;
+  --danger: #f85149;
+  --danger-bg: #3d1518;
+  --info: #58a6ff;
+  --info-bg: #0d2744;
+  font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.app-header h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.app-header .sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+  word-break: break-all;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 880px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.conn-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.conn-dot.on {
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+
+.conn-dot.off {
+  background: var(--danger);
+}
+
+.btn {
+  background: var(--info);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+textarea {
+  width: 100%;
+  min-height: 180px;
+  background: #0b0f13;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.exhibit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.exhibit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.exhibit-item.active {
+  border-color: var(--info);
+  box-shadow: inset 0 0 0 1px var(--info);
+}
+
+.exhibit-meta {
+  min-width: 0;
+}
+
+.exhibit-id {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.exhibit-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.errors {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+
+.errors ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+/* —— 唯一状态条 —— */
+.status-banner {
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-banner .big {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.status-banner .detail {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.status-banner.confirmed {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.status-banner.pending {
+  background: var(--info-bg);
+  border-color: var(--info);
+}
+
+.status-banner.timeout {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+.status-banner.shielded {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.status-banner.disconnected {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.log {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log .warn {
+  color: var(--warn);
+}
+
+.log .info {
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}

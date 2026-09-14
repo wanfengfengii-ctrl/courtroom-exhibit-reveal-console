@@ -1,0 +1,9 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+.npm-cache/
+.pw-browsers/
+.pw-deps/
+*.log
+.DS_Store
