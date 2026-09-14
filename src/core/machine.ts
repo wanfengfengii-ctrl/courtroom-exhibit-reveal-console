@@ -54,7 +54,7 @@ export interface ConsoleState {
 }
 
 export type ConsoleEvent =
-  | { type: 'connected'; at: number }
+  | { type: 'hello'; lastSeq: number; at: number }
   | { type: 'disconnected'; at: number }
   | { type: 'load'; exhibits: Exhibit[]; at: number }
   | { type: 'loadFailed'; errors: string[]; at: number }
@@ -75,13 +75,13 @@ function pushLog(log: LogEntry[], entry: LogEntry): LogEntry[] {
   return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
 }
 
-export function initState(sessionId: string): ConsoleState {
+export function initState(sessionId: string, initialSeq = 0): ConsoleState {
   return {
     sessionId,
     connected: false,
     exhibits: [],
     loadErrors: null,
-    seq: 0,
+    seq: initialSeq,
     current: null,
     shielded: null,
     ignoredAcks: [],
@@ -96,13 +96,24 @@ export function canReveal(state: ConsoleState): boolean {
 
 export function step(state: ConsoleState, event: ConsoleEvent): StepResult {
   switch (event.type) {
-    case 'connected': {
-      if (state.connected) return { state };
+    case 'hello': {
+      // 展示窗握手上报其已应用的最大序号：据此抬升本地序号基线，
+      // 保证控制台刷新后绝不会发出展示窗视为“旧序号”的揭示。
+      const seq = Math.max(state.seq, event.lastSeq);
+      const seqBumped = seq > state.seq;
+      if (state.connected && !seqBumped) return { state };
       return {
         state: {
           ...state,
           connected: true,
-          log: pushLog(state.log, { at: event.at, level: 'info', message: '展示窗已连接' }),
+          seq,
+          log: pushLog(state.log, {
+            at: event.at,
+            level: 'info',
+            message: seqBumped
+              ? `展示窗已连接，并将序号基线抬升至 #${seq}`
+              : '展示窗已连接',
+          }),
         },
       };
     }

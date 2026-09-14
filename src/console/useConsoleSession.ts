@@ -15,6 +15,22 @@ const PING_INTERVAL_MS = 600;
 const HELLO_GRACE_MS = 1500;
 const WATCHDOG_INTERVAL_MS = 400;
 
+const seqStorageKey = (sessionId: string) => `reveal-bench.seq.${sessionId}`;
+
+function readSeq(sessionId: string): number {
+  const raw = window.localStorage.getItem(seqStorageKey(sessionId));
+  const parsed = raw === null ? 0 : Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function writeSeq(sessionId: string, seq: number): void {
+  try {
+    window.localStorage.setItem(seqStorageKey(sessionId), String(seq));
+  } catch {
+    // 隐私模式等场景下持久化可能不可用，仅影响刷新后的基线恢复。
+  }
+}
+
 export interface ConsoleController {
   state: ConsoleState;
   openDisplay: () => void;
@@ -25,14 +41,19 @@ export interface ConsoleController {
 export function useConsoleSession(bus: MessageBus, sessionId: string): ConsoleController {
   const [state, dispatch] = useReducer(
     (prev: ConsoleState, action: Parameters<typeof step>[1]) => step(prev, action).state,
-    sessionId,
-    initState,
+    { sessionId, initialSeq: readSeq(sessionId) },
+    ({ sessionId: sid, initialSeq }) => initState(sid, initialSeq),
   );
 
   const stateRef = useRef(state);
   stateRef.current = state;
   const ackTimerRef = useRef<number | null>(null);
   const lastHelloRef = useRef(0);
+
+  // 序号与会话绑定持久化：刷新控制台后严格递增不复位。
+  useEffect(() => {
+    writeSeq(sessionId, state.seq);
+  }, [sessionId, state.seq]);
 
   const clearAckTimer = useCallback(() => {
     if (ackTimerRef.current !== null) {
@@ -46,9 +67,7 @@ export function useConsoleSession(bus: MessageBus, sessionId: string): ConsoleCo
       const now = Date.now();
       if (isHelloMessage(message) && message.sessionId === sessionId) {
         lastHelloRef.current = now;
-        if (!stateRef.current.connected) {
-          dispatch({ type: 'connected', at: now });
-        }
+        dispatch({ type: 'hello', lastSeq: message.lastSeq ?? 0, at: now });
       } else if (isByeMessage(message) && message.sessionId === sessionId) {
         dispatch({ type: 'disconnected', at: now });
       } else if (isAckMessage(message)) {

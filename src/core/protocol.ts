@@ -15,10 +15,11 @@ export interface PingMessage {
   sessionId: string;
 }
 
-/** 展示窗 → 控制台：在线应答（心跳回复） */
+/** 展示窗 → 控制台：在线应答（心跳回复），携带已应用的最大序号 */
 export interface HelloMessage {
   type: 'hello';
   sessionId: string;
+  lastSeq: number;
 }
 
 /** 展示窗 → 控制台：关闭前告知 */
@@ -98,7 +99,16 @@ export function isAckMessage(value: unknown): value is AckMessage {
 }
 
 export function isHelloMessage(value: unknown): value is HelloMessage {
-  return isObject(value) && value.type === 'hello' && asString(value.sessionId) !== null;
+  // lastSeq 容忍缺省（视作 0），但存在时必须为非负整数。
+  return (
+    isObject(value) &&
+    value.type === 'hello' &&
+    asString(value.sessionId) !== null &&
+    (value.lastSeq === undefined ||
+      (typeof value.lastSeq === 'number' &&
+        Number.isInteger(value.lastSeq) &&
+        value.lastSeq >= 0))
+  );
 }
 
 export function isByeMessage(value: unknown): value is ByeMessage {

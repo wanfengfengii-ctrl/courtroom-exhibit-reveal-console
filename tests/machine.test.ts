@@ -6,7 +6,7 @@ const ex = (id: string): Exhibit => ({ id, title: `证物 ${id}`, body: `正文 
 const T = 1000;
 
 function connectedSession() {
-  return step(initState('sess-A'), { type: 'connected', at: T }).state;
+  return step(initState('sess-A'), { type: 'hello', lastSeq: 0, at: T }).state;
 }
 
 function loaded(state = connectedSession(), items = ['A', 'B']) {
@@ -32,6 +32,21 @@ describe('连接守卫', () => {
     expect(canReveal(state)).toBe(true);
     state = step(state, { type: 'disconnected', at: T }).state;
     expect(canReveal(state)).toBe(false);
+  });
+
+  it('控制台刷新后序号不复位：hello 以展示窗已应用序号抬升基线，下一次揭示严格更大', () => {
+    // 模拟刷新后内存序号归零、但展示窗保持打开且已应用 #3
+    const fresh = initState('sess-A');
+    const greeted = step(fresh, { type: 'hello', lastSeq: 3, at: T }).state;
+    expect(greeted.connected).toBe(true);
+    expect(greeted.seq).toBe(3);
+
+    const reveal = step(greeted, { type: 'reveal', exhibit: ex('A'), at: T + 10 });
+    expect(reveal.send?.seq).toBe(4);
+
+    // 本地持久化基线高于展示窗上报时不回退
+    const persisted = step(initState('sess-A', 5), { type: 'hello', lastSeq: 3, at: T }).state;
+    expect(persisted.seq).toBe(5);
   });
 });
 

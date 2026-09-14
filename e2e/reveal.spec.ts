@@ -168,6 +168,18 @@ test.describe('双屏揭示台验收（两个浏览上下文）', () => {
     await display.waitForLoadState('load');
     await expect(display.getByTestId('display-empty')).toBeVisible();
 
+    // 恢复后的确认仍延迟 300ms，以确定性观察重试的 等待确认 → 已同步。
+    await display.evaluate(() => {
+      const orig = BroadcastChannel.prototype.postMessage;
+      BroadcastChannel.prototype.postMessage = function (msg: unknown) {
+        if (msg && typeof msg === 'object' && (msg as { type?: string }).type === 'ack') {
+          window.setTimeout(() => orig.call(this, msg), 300);
+          return;
+        }
+        return orig.call(this, msg);
+      };
+    });
+
     await page.getByRole('button', { name: '以新序号重试' }).click();
     expect(await status(page)).toBe('pending');
     await expect(page.getByTestId('status-banner')).toContainText('#2');
@@ -198,6 +210,38 @@ test.describe('双屏揭示台验收（两个浏览上下文）', () => {
     await loadJson(page, JSON.stringify({ exhibits: [{ id: 'X', title: '' }] }));
     await expect(page.getByTestId('load-errors')).toContainText('body 必须为非空字符串');
     await expect(page.getByTestId('exhibit-list')).toBeEmpty();
+  });
+
+  test('投影窗保持打开时刷新控制台：序号基线不复位，再次揭示立即切换并确认', async ({
+    page,
+    context,
+  }) => {
+    await openConsole(page);
+    const sid = await getSessionId(page);
+    const display = await openDisplay(context, sid);
+    await expect(page.getByTestId('status-banner')).toHaveAttribute('data-status', 'ready');
+    await loadJson(page, VALID_JSON);
+
+    await page.getByTestId('exhibit-EX-01').getByRole('button', { name: '揭示' }).click();
+    await expect(page.getByTestId('status-banner')).toHaveAttribute('data-status', 'confirmed');
+    await expect(display.getByTestId('shown-id')).toHaveText('EX-01');
+    expect(await page.getByTestId('status-banner').innerText()).toContain('#1');
+
+    // 只刷新值守控制台，投影窗保持打开
+    await page.reload();
+    await page.waitForLoadState();
+    await expect(page.getByTestId('status-banner')).toHaveAttribute('data-status', 'ready', {
+      timeout: 5000,
+    });
+    await loadJson(page, VALID_JSON);
+
+    // 再次揭示必须使用抬升后的新序号 #2，且不得超时
+    await page.getByTestId('exhibit-EX-02').getByRole('button', { name: '揭示' }).click();
+    await expect(page.getByTestId('status-banner')).toContainText('#2');
+    await expect(page.getByTestId('status-banner')).toHaveAttribute('data-status', 'confirmed');
+    await expect(display.getByTestId('shown-id')).toHaveText('EX-02');
+    // 不应进入超时态
+    expect(await status(page)).not.toBe('timeout');
   });
 
   test('展示窗关闭后控制台回到未连接，禁止继续揭示', async ({ page, context }) => {

@@ -14,7 +14,8 @@ export function DisplayApp({ bus, sessionId }: { bus: MessageBus; sessionId: str
   const appliedSeqRef = useRef(0);
 
   useEffect(() => {
-    const sayHello = () => bus.post({ type: 'hello', sessionId });
+    const sayHello = () =>
+      bus.post({ type: 'hello', sessionId, lastSeq: appliedSeqRef.current });
 
     // 加载后立即报到，并响应每次心跳。
     sayHello();
